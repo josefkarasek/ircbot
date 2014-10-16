@@ -13,6 +13,7 @@ public:
     void establishClientConnection();
     void sendMsg(string msg);
     string readMsg();
+    string getMyIP();
 
 private:
     string hostName;
@@ -20,6 +21,7 @@ private:
     int sockfd;
     static const int MSG_LEN = 1500;
     char msg_buffer[MSG_LEN];
+    bool IPv6;
 };
 
 #endif

@@ -11,6 +11,7 @@ public:
     virtual void establishClientConnection() = 0;
     virtual void sendMsg(string msg) = 0;
     virtual string readMsg() = 0;
+    virtual string getMyIP() = 0;
 };
 
 #endif
