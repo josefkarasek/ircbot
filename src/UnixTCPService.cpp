@@ -1,7 +1,7 @@
 //#include "SocketNetworkService.h"
 //#include "InetAddr.h"
 #include "NetworkException.h"
-#include "UnixNetworkService.h"
+#include "UnixTCPService.h"
 #include <string>
 #include <netdb.h>
 #include <sys/types.h>
@@ -11,20 +11,24 @@
 #include <string.h>
 #include <iostream>
 #include <unistd.h>
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
 
 using namespace std;
 
-UnixNetworkService::UnixNetworkService(string hostName, string port) {
+UnixTCPService::UnixTCPService(const string hostName, const string port) {
     this->hostName = hostName;
     this->port = port;
     this->sockfd = -1;
     this->IPv6 = false;
 }
-UnixNetworkService::~UnixNetworkService() {
+
+UnixTCPService::~UnixTCPService() {
     //..be coming
 }
 
-void UnixNetworkService::establishClientConnection() {
+void UnixTCPService::establishClientConnection() {
     //resolve hostname to IP address
 
     struct addrinfo hints, *res, *p;
@@ -39,28 +43,33 @@ void UnixNetworkService::establishClientConnection() {
     }
 
     //Search through list of addresses and pick first one. IPv4 preferred.
-    void *addr;
+    void *addr; //Is never used!!
     for(p = res; p != NULL; p = p->ai_next) {
         if (p->ai_family == AF_INET) { // IPv4
+            cout << "Volim si tebe IPv4!\n";
             struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
-            addr = &(ipv4->sin_addr);
+//            this->address = ipv4;
             break;
         } else { // IPv6
             struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)p->ai_addr;
             addr = &(ipv6->sin6_addr);
+//            this->address = ipv6;
             IPv6 = true;
             break;
         }
     }
-    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    if((this->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
+        throw NetworkException("Error: couldn't create a socket.");
+
+    // Use connect only if TCP communication is used.
+    cout << "connect" <<endl;
     if(connect(sockfd, res->ai_addr, res->ai_addrlen) < 0) {
         throw NetworkException("Error when creating socket.");
     }
     //freeaddrinfo(res);
-
 }
 
-string UnixNetworkService::getMyIP() {
+string UnixTCPService::getMyIP() {
     struct sockaddr_in ipv4;
     struct sockaddr_in6 ipv6;
     unsigned lenv4 = sizeof(ipv4);
@@ -81,7 +90,7 @@ string UnixNetworkService::getMyIP() {
     return ipAddress;
 }
 
-string UnixNetworkService::readMsg() {
+string UnixTCPService::readMsg() {
     memset(&msg_buffer, 0, MSG_LEN);
     int bytes_read = recv(sockfd, &msg_buffer, MSG_LEN, 0);
     if(bytes_read <= 0) {
@@ -92,10 +101,14 @@ string UnixNetworkService::readMsg() {
     return returnMsg;
 }
 
-void UnixNetworkService::sendMsg(string msg) {
+void UnixTCPService::sendMsg(string msg) {
     usleep(1000000);
-    int bytes_sent = send(sockfd, msg.c_str(), msg.length(), 0);
+
+    int bytes_sent;
+    bytes_sent = send(sockfd, msg.c_str(), msg.length(), 0);
+
     if(bytes_sent < 0) {
+        cout << strerror(errno) << endl;;
         throw NetworkException("Error when sending message.");
     }
 }

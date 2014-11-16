@@ -1,19 +1,20 @@
+
+
+#ifndef UNIX_UDP_NETWORK_SERVICE_H
+#define UNIX_UDP_NETWORK_SERVICE_H
+
 #include <string>
 #include "SocketNetworkService.h"
 
 using namespace std;
 
-#ifndef UNIX_NETWORK_SERVICE_H
-#define UNIX_NETWORK_SERVICE_H
-
-class UnixNetworkService :  SocketNetworkService {
+class UnixUDPService : SocketNetworkService {
 public:
-    UnixNetworkService(string hostName, string port);
-    ~UnixNetworkService();
+    UnixUDPService(string hostName, string port);
+    ~UnixUDPService();
     void establishClientConnection();
     void sendMsg(string msg);
     string readMsg();
-    string getMyIP();
 
 private:
     string hostName;
@@ -22,6 +23,7 @@ private:
     static const int MSG_LEN = 1500;
     char msg_buffer[MSG_LEN];
     bool IPv6;
+    void *addr;
 };
 
 #endif

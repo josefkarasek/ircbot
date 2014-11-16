@@ -10,15 +10,14 @@
 #include <vector>
 #include <string>
 #include <ctime>
-#include "UnixNetworkService.h"
+#include <sstream>
+#include "UnixUDPService.h"
+#include "UnixTCPService.h"
 #include "NetworkException.h"
 
 using namespace std;
 
-void printLine(vector<string> compound);
 vector<string> split(string argument, string delimiter);
-string extractLogin(string s);
-string extractBody(vector<string>::iterator v, vector<string>::iterator end);
 
 class Ircbot {
 
@@ -28,53 +27,60 @@ private:
     string channel;
     string syslogHostName;
     vector<string> specialWords;
-    UnixNetworkService *svc;
+    UnixTCPService *ircService;
+    UnixUDPService *syslogService;
 
 public:
     Ircbot(string ircHostname, string port, string channel, string syslogHostName, vector<string> specialWords) {
         this->ircHostName = ircHostname;
-        this->port = port;
         this->channel = channel;
         this->syslogHostName = syslogHostName;
         this->specialWords = specialWords;
-        this->svc = new UnixNetworkService(ircHostName, port);
+        if(port == "")
+            this->port = "6667";
+        else
+            this->port = port;
+        this->ircService = new UnixTCPService(ircHostName, this->port);
+        this->syslogService = new UnixUDPService(syslogHostName, "6667");
     }
 
 
 
     int run() {
-//        UnixNetworkService *svc = new UnixNetworkService(ircHostName, port);
 
         try {
+            syslogService->establishClientConnection();
+            syslogService->sendMsg("<134>Sep 21 17:32:18 192.168.0.2 ircbot <xlogin01>: nej predmet na fit je isa");
+
             string serverResponse;
-            svc->establishClientConnection();
-//            svc->readMsg();
-//            svc->readMsg();
-//            svc->sendMsg("PASS dummy\r\n");
-//            svc->readMsg();
-            svc->sendMsg("NICK NeoWithMustage\r\n");
-            serverResponse = svc->readMsg();
+            ircService->establishClientConnection();
+//            ircService->readMsg();
+//            ircService->readMsg();
+//            ircService->sendMsg("PASS dummy\r\n");
+//            ircService->readMsg();
+            ircService->sendMsg("NICK NeoWithMustage\r\n");
+            serverResponse = ircService->readMsg();
 //            printLine(split(serverResponse, "\n"));
             dispatchMessage(split(serverResponse, "\n"));
-            svc->sendMsg("USER xkaras27 xkaras27 xkaras27:xkaras27 xkaras27\r\n");
-            serverResponse = svc->readMsg();
+            ircService->sendMsg("USER xkaras27 xkaras27 xkaras27:xkaras27 xkaras27\r\n");
+            serverResponse = ircService->readMsg();
 //            printLine(split(serverResponse, "\n"));
             dispatchMessage(split(serverResponse, "\n"));
-//            svc->sendMsg("LIST\r\n");
-//            svc->readMsg();
-            svc->sendMsg("JOIN " + this->channel + "\r\n");
-            serverResponse = svc->readMsg();
+//            ircService->sendMsg("LIST\r\n");
+//            ircService->readMsg();
+            ircService->sendMsg("JOIN " + this->channel + "\r\n");
+            serverResponse = ircService->readMsg();
 //            printLine(split(serverResponse, "\n"));
             dispatchMessage(split(serverResponse, "\n"));
-//            svc->sendMsg("QUIT :Gone to have lunch\r\n");
-//            svc->readMsg();
+//            ircService->sendMsg("QUIT :Gone to have lunch\r\n");
+//            ircService->readMsg();
             while(true) {
-                serverResponse = svc->readMsg();
+                serverResponse = ircService->readMsg();
 //                printLine(split(serverResponse, "\n"));
                 dispatchMessage(split(serverResponse, "\n"));
             }
 
-        } catch (NetworkException const& e) {
+        } catch (const NetworkException & e) {
             cerr << e.what() << endl;
             return 1;
         }
@@ -95,7 +101,7 @@ public:
     }
 
     /**
-     * TODO: seznam hledanych slov!!
+     *
      */
     void dispatchMessage(vector<string> message) {
         vector<string> vec = message;
@@ -108,27 +114,29 @@ public:
 
                 if((*v2).compare("PING") == 0) {
                     string pong = "PONG " + *(v2 + 1) + "\r\n";
-                    cout << "Sending PONG:  " << pong;
-                    svc->sendMsg(pong);
-
+                    ircService->sendMsg(pong);
                 }
                 // Error detection
                 if((*v2).compare("ERROR") == 0) {
-                    cout << "<134>" + timeStamp() + " " + svc->getMyIP() + " ircbot " + "<" +
+                    cout << "<134>" + timeStamp() + " " + ircService->getMyIP() + " ircbot " + "<" +
                             extractLogin(*(v2-1)) + ">" + ": " + extractBody(v2 + 1, vec2.end()) << endl;
                     throw NetworkException("IRC server replied with error messagage.");
                 }
                 // Checking for error code
                 if(i == 1 && ((*v2)[0] == '4' || (*v2)[0] == '5')) {
-                    cout << "<134>" + timeStamp() + " " + svc->getMyIP() + " ircbot " + "<" +
+                    cout << "<134>" + timeStamp() + " " + ircService->getMyIP() + " ircbot " + "<" +
                             extractLogin(*(v2-1)) + ">" + ": " + extractBody(v2 + 1, vec2.end()) << endl;
                     throw NetworkException("IRC server replied with error messagage.");
                 }
                 // Real work is done here:
                 if((*v2).compare("PRIVMSG") == 0 || (*v2).compare("NOTICE") == 0) {
                     // If message starts with login information, extract the login
-                    cout << "<134>" + timeStamp() + " " + svc->getMyIP() + " ircbot " + "<" +
-                            extractLogin(*(v2-1)) + ">" + ": " + extractBody(v2 + 1, vec2.end()) << endl;
+                    string messageBody = extractBody(v2 + 1, vec2.end());
+                    cout << "<134>" + timeStamp() + " " + ircService->getMyIP() + " ircbot " + "<" +
+                            extractLogin(*(v2-1)) + ">" + ": " + messageBody << endl;
+                    if(containsSpecialWord(messageBody)) {
+                        cout << "Nasel jsem SPECIAL WORD!!!" << endl;
+                    }
                 }
                 i++;
                 v2++;
@@ -137,11 +145,22 @@ public:
         }
     }
 
+    bool containsSpecialWord(string messageBody) {
+        stringstream s(messageBody);
+        string word;
+        for (int i = 0; s >> word; i++) {
+            for(unsigned j = 0; j < specialWords.size(); j++) {
+                if(word == specialWords[j])
+                    return true;
+            }
+        }
+        return false;
+    }
+
     string extractBody(vector<string>::iterator v, vector<string>::iterator end) {
         bool beginConcatenation = false;
         string messageBody = "";
         while(v != end) {
-//            cout << "word: " << *v << endl;
             if(beginConcatenation == false && (*(v))[0] == ':') {
                 beginConcatenation = true;
                 string first_word = *(v);
@@ -157,6 +176,7 @@ public:
         }
         return messageBody;
     }
+
     string extractLogin(string s) {
         int start, end;
         if(s[0] == ':') // We don't want the colon in the login.
@@ -170,6 +190,9 @@ public:
         return s.substr(start, end);
     }
 
+    /**
+     *  Generates current time stamp in format Sep 21 17:33:19.
+     */
     string timeStamp() {
         time_t rawtime;
         char buffer[80];
@@ -183,7 +206,9 @@ public:
 
 };
 
-
+/**
+ *  CLI arguments are stored here.
+ */
 struct arguments {
     string ircHostName;
     string port;
@@ -193,7 +218,7 @@ struct arguments {
 };
 
 /**
- *
+ *  Display help message.
  */
 void printHelp() {
     string helpBody = "Usage:"
@@ -207,7 +232,8 @@ void printHelp() {
 }
 
 /**
- *
+ *  Split string on given delimiter.
+ *  @returns Empty vector or vector containing strings split on delimiter. Delimiter isn't returned back.
  */
 vector<string> split(string argument, string delimiter) {
     vector<string> parts;
@@ -226,7 +252,8 @@ vector<string> split(string argument, string delimiter) {
 }
 
 /**
- *
+ *  Parses arguments and validates their values.
+ *  @returns Struct arguments filled with respecitve values.
  */
 arguments checkAndParseArguments(int argc, char ** argv) {
     //find port number if is present
@@ -257,7 +284,7 @@ arguments checkAndParseArguments(int argc, char ** argv) {
 
 
 /**
- *
+ *  This program starts here.
  */
 int main(int argc, char ** argv) {
     if(argc < 4) {
@@ -279,42 +306,3 @@ int main(int argc, char ** argv) {
 
     return bot->run();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
