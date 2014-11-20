@@ -30,7 +30,6 @@ UnixTCPService::~UnixTCPService() {
 
 void UnixTCPService::establishClientConnection() {
     //resolve hostname to IP address
-
     struct addrinfo hints, *res, *p;
     int status;
 
@@ -46,7 +45,7 @@ void UnixTCPService::establishClientConnection() {
     void *addr; //Is never used!!
     for(p = res; p != NULL; p = p->ai_next) {
         if (p->ai_family == AF_INET) { // IPv4
-            cout << "Volim si tebe IPv4!\n";
+//            cout << "Volim si tebe IPv4!\n";
             struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
 //            this->address = ipv4;
             break;
@@ -62,7 +61,6 @@ void UnixTCPService::establishClientConnection() {
         throw NetworkException("Error: couldn't create a socket.");
 
     // Use connect only if TCP communication is used.
-    cout << "connect" <<endl;
     if(connect(sockfd, res->ai_addr, res->ai_addrlen) < 0) {
         throw NetworkException("Error when creating socket.");
     }
@@ -93,10 +91,9 @@ string UnixTCPService::getMyIP() {
 string UnixTCPService::readMsg() {
     memset(&msg_buffer, 0, MSG_LEN);
     int bytes_read = recv(sockfd, &msg_buffer, MSG_LEN, 0);
-    if(bytes_read <= 0) {
+    if(bytes_read < 0) {
         throw NetworkException("Error when receiving message.");
     }
-
     string returnMsg = msg_buffer;
     return returnMsg;
 }
@@ -107,14 +104,6 @@ void UnixTCPService::sendMsg(string msg) {
     int bytes_sent;
     bytes_sent = send(sockfd, msg.c_str(), msg.length(), 0);
 
-    if(bytes_sent < 0) {
-        cout << strerror(errno) << endl;;
+    if(bytes_sent < 0)
         throw NetworkException("Error when sending message.");
-    }
 }
-
-
-
-
-
-

@@ -41,7 +41,7 @@ public:
         else
             this->port = port;
         this->ircService = new UnixTCPService(ircHostName, this->port);
-        this->syslogService = new UnixUDPService(syslogHostName, "6667");
+        this->syslogService = new UnixUDPService(syslogHostName, "514");
     }
 
 
@@ -54,29 +54,18 @@ public:
 
             string serverResponse;
             ircService->establishClientConnection();
-//            ircService->readMsg();
-//            ircService->readMsg();
-//            ircService->sendMsg("PASS dummy\r\n");
-//            ircService->readMsg();
             ircService->sendMsg("NICK NeoWithMustage\r\n");
             serverResponse = ircService->readMsg();
-//            printLine(split(serverResponse, "\n"));
             dispatchMessage(split(serverResponse, "\n"));
             ircService->sendMsg("USER xkaras27 xkaras27 xkaras27:xkaras27 xkaras27\r\n");
             serverResponse = ircService->readMsg();
-//            printLine(split(serverResponse, "\n"));
             dispatchMessage(split(serverResponse, "\n"));
-//            ircService->sendMsg("LIST\r\n");
-//            ircService->readMsg();
             ircService->sendMsg("JOIN " + this->channel + "\r\n");
             serverResponse = ircService->readMsg();
-//            printLine(split(serverResponse, "\n"));
             dispatchMessage(split(serverResponse, "\n"));
-//            ircService->sendMsg("QUIT :Gone to have lunch\r\n");
-//            ircService->readMsg();
+
             while(true) {
                 serverResponse = ircService->readMsg();
-//                printLine(split(serverResponse, "\n"));
                 dispatchMessage(split(serverResponse, "\n"));
             }
 
@@ -118,24 +107,27 @@ public:
                 }
                 // Error detection
                 if((*v2).compare("ERROR") == 0) {
-                    cout << "<134>" + timeStamp() + " " + ircService->getMyIP() + " ircbot " + "<" +
-                            extractLogin(*(v2-1)) + ">" + ": " + extractBody(v2 + 1, vec2.end()) << endl;
-                    throw NetworkException("IRC server replied with error messagage.");
+                    string log = "<134>" + timeStamp() + " " + ircService->getMyIP() + " ircbot " + "<" +
+                           extractLogin(*(v2-1)) + ">" + ": " + extractBody(v2 + 1, vec2.end());
+                    syslogService->sendMsg(log);
+                    throw NetworkException("IRC server replied with error message.");
                 }
                 // Checking for error code
                 if(i == 1 && ((*v2)[0] == '4' || (*v2)[0] == '5')) {
-                    cout << "<134>" + timeStamp() + " " + ircService->getMyIP() + " ircbot " + "<" +
-                            extractLogin(*(v2-1)) + ">" + ": " + extractBody(v2 + 1, vec2.end()) << endl;
-                    throw NetworkException("IRC server replied with error messagage.");
+                    string log = "<134>" + timeStamp() + " " + ircService->getMyIP() + " ircbot " + "<" +
+                            extractLogin(*(v2-1)) + ">" + ": " + extractBody(v2 + 1, vec2.end());
+                    syslogService->sendMsg(log);
+                    throw NetworkException("IRC server replied with error message.");
                 }
                 // Real work is done here:
                 if((*v2).compare("PRIVMSG") == 0 || (*v2).compare("NOTICE") == 0) {
                     // If message starts with login information, extract the login
-                    string messageBody = extractBody(v2 + 1, vec2.end());
-                    cout << "<134>" + timeStamp() + " " + ircService->getMyIP() + " ircbot " + "<" +
-                            extractLogin(*(v2-1)) + ">" + ": " + messageBody << endl;
+                    string messageBody = strip(extractBody(v2 + 1, vec2.end()), '\r');
+                    string log = "<134>" + timeStamp() + " " + ircService->getMyIP() + " ircbot " + "<" +
+                            extractLogin(*(v2-1)) + ">" + ": " + messageBody;
                     if(containsSpecialWord(messageBody)) {
-                        cout << "Nasel jsem SPECIAL WORD!!!" << endl;
+//                        cout << "Nasel jsem SPECIAL WORD!!!" << endl;
+                        syslogService->sendMsg(log);
                     }
                 }
                 i++;
@@ -145,6 +137,9 @@ public:
         }
     }
 
+    /**
+     *  Loop through IRC message body and search for special words.
+     */
     bool containsSpecialWord(string messageBody) {
         stringstream s(messageBody);
         string word;
@@ -157,6 +152,9 @@ public:
         return false;
     }
 
+    /**
+     *  Parses text body from IRC messages.
+     */
     string extractBody(vector<string>::iterator v, vector<string>::iterator end) {
         bool beginConcatenation = false;
         string messageBody = "";
@@ -177,6 +175,9 @@ public:
         return messageBody;
     }
 
+    /**
+     *  Parses login from IRC messages.
+     */
     string extractLogin(string s) {
         int start, end;
         if(s[0] == ':') // We don't want the colon in the login.
@@ -251,6 +252,16 @@ vector<string> split(string source_string, string delimiter) {
     return parts;
 }
 
+string strip(const string &source, const char &delimiter) {
+    int first = 0;
+    while (first <= source.length() && source[first] == delimiter)
+        ++first;
+    int last = source.length() - 1;
+    while (last >= 0 && source[last] == delimiter)
+        --last;
+    return source.substr(first, last);
+}
+
 /**
  *  Parses arguments and validates their values.
  *  @returns Struct arguments filled with respecitve values.
@@ -259,6 +270,7 @@ arguments checkAndParseArguments(int argc, char ** argv) {
     //find port number if is present
     string port = "";
     string hostname = argv[1];
+    vector<string> specialWords;
     int position = hostname.find(":");
     if(position != -1) {
         vector<string> host_and_port = split(hostname, ":");
@@ -266,7 +278,6 @@ arguments checkAndParseArguments(int argc, char ** argv) {
         port = host_and_port.at(1);
     }
     //check whether list of special words is present
-    vector<string> specialWords = "";
     if(argc == 5) {
         specialWords = split(static_cast<string>(argv[4]), ";");
     }
@@ -274,7 +285,7 @@ arguments checkAndParseArguments(int argc, char ** argv) {
     arguments args;
     args.ircHostName = hostname;
     args.port = port;
-    args.channel = argv[2];
+    args.channel = argv[2];  //TODO: how to check channel's correctness?
     args.syslogHostName = argv[3];
     args.specialWords = specialWords;
 
