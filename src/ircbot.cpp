@@ -235,18 +235,18 @@ void printHelp() {
  *  Split string on given delimiter.
  *  @returns Empty vector or vector containing strings split on delimiter. Delimiter isn't returned back.
  */
-vector<string> split(string argument, string delimiter) {
+vector<string> split(string source_string, string delimiter) {
     vector<string> parts;
-    int pos;
-    while(!argument.empty()) {
-        pos = argument.find(delimiter);
+    int position;
+    while(!source_string.empty()) {
+        position = source_string.find(delimiter);
         //String doesn't contain given character
-        if(pos == -1) {
-            parts.push_back(argument);
+        if(position == -1) {
+            parts.push_back(source_string);
             break;
         }
-        parts.push_back(argument.substr(0, pos));
-        argument.erase(0, pos + 1);
+        parts.push_back(source_string.substr(0, position));
+        source_string.erase(0, position + 1);
     }
     return parts;
 }
@@ -266,7 +266,7 @@ arguments checkAndParseArguments(int argc, char ** argv) {
         port = host_and_port.at(1);
     }
     //check whether list of special words is present
-    vector<string> specialWords;
+    vector<string> specialWords = "";
     if(argc == 5) {
         specialWords = split(static_cast<string>(argv[4]), ";");
     }
