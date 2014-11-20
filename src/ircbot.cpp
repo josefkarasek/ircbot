@@ -259,8 +259,8 @@ arguments checkAndParseArguments(int argc, char ** argv) {
     //find port number if is present
     string port = "";
     string hostname = argv[1];
-    int pos = hostname.find(":");
-    if(pos != -1) {
+    int position = hostname.find(":");
+    if(position != -1) {
         vector<string> host_and_port = split(hostname, ":");
         hostname = host_and_port.at(0);
         port = host_and_port.at(1);
