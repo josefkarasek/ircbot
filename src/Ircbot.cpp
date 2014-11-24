@@ -10,6 +10,7 @@
 #include "Utils.h"
 #include <signal.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 using namespace std;
 
@@ -24,29 +25,11 @@ Ircbot::Ircbot(string ircHostname, string port, string channel, string syslogHos
         this->port = port;
     this->ircService = new UnixTCPService(ircHostName, this->port);
     this->syslogService = new UnixUDPService(syslogHostName, "514");
-
-    struct sigaction sigIntHandler;
-
-//    int (TMyClass::*pt2ConstMember)(float, char, char) const = NULL;
-//    void (Ircbot::*pt2Member) (int) = &Ircbot::sendQuit;
-    sigIntHandler.sa_handler =  (__sighandler_t) &Ircbot::sendQuit;
-    sigemptyset(&sigIntHandler.sa_mask);
-    sigIntHandler.sa_flags = 0;
-
-    sigaction(SIGINT, &sigIntHandler, NULL);
-
 }
 
 Ircbot::~Ircbot() {
     delete(ircService);
     delete(syslogService);
-}
-
-void Ircbot::sendQuit(int s) {
-    cout << "Quitting on the user's command." << endl;
-    cout << "Sending QUIT to the IRC server..." << endl;
-    this->ircService->sendMsg("QUIT\r\n");
-    exit(0);
 }
 
 /**
@@ -110,6 +93,7 @@ void Ircbot::dispatchMessage(vector<string> message) {
         vector<string>::iterator v2 = vec2.begin();
         int i = 0;
         while(v2 != vec2.end() && i < 2) {
+            cout << "Word: " << *v2 << endl;
 
             if((*v2).compare("PING") == 0) {
                 string pong = "PONG " + *(v2 + 1) + "\r\n";
@@ -117,8 +101,14 @@ void Ircbot::dispatchMessage(vector<string> message) {
             }
             // Error detection
             if((*v2).compare("ERROR") == 0) {
+                string login;
+                if(i == 0)
+                    login = this->ircHostName;
+                else
+                    login = extractLogin(*(v2-1));
                 string log = "<134>" + timeStamp() + " " + ircService->getMyIP() + " ircbot " + "<" +
-                       extractLogin(*(v2-1)) + ">" + ": " + strip(extractBody(v2 + 1, vec2.end()), '\r');
+                       login + ">" + ": " + strip(extractBody(v2 + 1, vec2.end()), '\r');
+                cout << log << endl;
                 syslogService->sendMsg(log);
                 throw NetworkException("IRC server replied with error message.");
             }
@@ -131,12 +121,18 @@ void Ircbot::dispatchMessage(vector<string> message) {
             }
             // Real work is done here:
             if((*v2).compare("PRIVMSG") == 0 || (*v2).compare("NOTICE") == 0) {
+                string login;
+                if(i == 0)
+                    login = this->ircHostName;
+                else
+                    login = extractLogin(*(v2-1));
+
                 // If message starts with login information, extract the login
                 string messageBody = strip(extractBody(v2 + 1, vec2.end()), '\r');
                 string log = "<134>" + timeStamp() + " " + ircService->getMyIP() + " ircbot " + "<" +
-                        extractLogin(*(v2-1)) + ">" + ": " + messageBody;
+                        login + ">" + ": " + messageBody;
 
-                // If no list of words to look for wasn't provided by the user, log everything.
+                // If the list of words to look for wasn't provided by the user, log everything.
                 if(this->specialWords.empty()) {
                     cout << log << endl;
                     syslogService->sendMsg(log);
@@ -222,5 +218,3 @@ string Ircbot::timeStamp() {
     string str(buffer);
     return str;
 }
-
-

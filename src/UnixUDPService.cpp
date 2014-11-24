@@ -41,13 +41,12 @@ UnixUDPService::~UnixUDPService() {
 
 void UnixUDPService::establishClientConnection() {
     //resolve hostname to IP address
-
-    int status;
     struct addrinfo hints;
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
 
+    int status;
     if((status = getaddrinfo(hostName.c_str(), port.c_str(), &hints, &res)) != 0)
         throw NetworkException("Error: couldn't resolve hostname to IP address.");
 

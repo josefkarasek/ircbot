@@ -22,7 +22,6 @@
 
 using namespace std;
 
-void interruptHandler(int s, Ircbot ircbot);
 //
 //vector<string> split(string argument, string delimiter);
 //string strip(const string &source, const char &delimiter);
@@ -328,9 +327,6 @@ arguments checkAndParseArguments(int argc, char ** argv) {
     return args;
 }
 
-void interruptHandler(int s, Ircbot ircbot) {
-    ircbot.sendQuit(s);
-}
 /**
  *  This program starts here.
  */
@@ -340,14 +336,16 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
-//    struct sigaction sigIntHandler;
-//
-//    sigIntHandler.sa_handler = interruptHandler;
-//    sigemptyset(&sigIntHandler.sa_mask);
-//    sigIntHandler.sa_flags = 0;
-//
-//    sigaction(SIGINT, &sigIntHandler, NULL);
     arguments a = checkAndParseArguments(argc, argv);
+
+    cout << a.ircHostName << "  " << a.port << "  " << a.channel << "  " << a.syslogHostName << "  " << endl;
+
+    vector<string> vec = a.specialWords ;
+    vector<string>::iterator v = vec.begin();
+    while(v != vec.end()) {
+        cout << *v << endl;
+        v++;
+    }
 
     Ircbot * bot = new Ircbot(a.ircHostName, a.port, a.channel, a.syslogHostName, a.specialWords);
     int err = bot->run();

@@ -31,12 +31,12 @@ UnixTCPService::UnixTCPService(const string hostName, const string port) {
     this->IPv6 = false;
     this->addr = nullptr;
     this->p = nullptr;
-    this->res =nullptr;
+    this->res = nullptr;
 }
 
 UnixTCPService::~UnixTCPService() {
-    freeaddrinfo(res);
-    freeaddrinfo(p);
+//    freeaddrinfo(res);  //If exception is thrown, these two calls have problems to finish.
+//    freeaddrinfo(p);    //Better off let leak some memory than have a seg faults.
     close(sockfd);
 }
 
@@ -70,9 +70,8 @@ void UnixTCPService::establishClientConnection() {
         throw NetworkException("Error: couldn't create a socket.");
 
     // Use connect only if TCP communication is used.
-    if(connect(sockfd, res->ai_addr, res->ai_addrlen) < 0) {
+    if(connect(sockfd, res->ai_addr, res->ai_addrlen) < 0)
         throw NetworkException("Error when creating socket.");
-    }
 }
 
 string UnixTCPService::getMyIP() {
@@ -98,20 +97,19 @@ string UnixTCPService::getMyIP() {
 
 string UnixTCPService::readMsg() {
     memset(&msg_buffer, 0, MSG_LEN);
+
     int bytes_read = recv(sockfd, &msg_buffer, MSG_LEN, 0);
-    if(bytes_read < 0) {
+    if(bytes_read == 0)
+        throw NetworkException("Client closed connection.");
+    if(bytes_read < 0)
         throw NetworkException("Error when receiving message.");
-    }
+
     string returnMsg = msg_buffer;
     return returnMsg;
 }
 
 void UnixTCPService::sendMsg(string msg) {
-    usleep(500000);
-
-    int bytes_sent;
-    bytes_sent = send(sockfd, msg.c_str(), msg.length(), 0);
-
+    int bytes_sent = send(sockfd, msg.c_str(), msg.length(), 0);
     if(bytes_sent < 0)
         throw NetworkException("Error when sending message.");
 }
