@@ -1,0 +1,27 @@
+Ircbot
+
+Projekt programování síťové aplikace pro předmět ISA 2014
+Autor: xkaras27
+
+Příklad spuštění programu:
+  ./ircbot webchat.irchighway.net:6667 "#isa-proj" 127.0.0.1 "lan;wan"
+
+  Po spuštění program naváže spojení s daným IRC serverem. V případě chyby bude vypsáno hlášení
+na STDERR a vrácen chybový kód větší než 0. Syslog pracuje na UDP protokolu, tudíž žádná kontrola
+se neprovádí.
+  Při koretním průběhu bude program odchytávat a prohledávat zprávy. Pokud dojde k odeslání logu
+na SYSLOG server, bude logovaná zpráva vypsána i na STDOUT.
+
+Rozšíření: Nic, co by stálo za zmínění.
+Nedostatky: Snad žádné.
+
+Seznam souborů:
+  ircbot.cpp
+  SocketNetworkService.h
+  UnixTCPService.cpp
+  UnixTCPService.h
+  UnixUDPService.h
+  UnixUDPService.cpp
+  NetworkException.h
+
+Více info v manual.pdf.

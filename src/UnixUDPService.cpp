@@ -1,10 +1,15 @@
-/*
- * UnixUDPService.cpp
- *
- *  Created on: Nov 11, 2014
- *      Author: pepa
- */
+//============================================================================
+// Name        : UnixUDPService.cpp
+// Author      : xkaras27@stud.fit.vutbr.cz
+// Version     : 0.1
+// Copyright   : Apache License, Version 2.0 You may obtain a copy of the
+//               License at http://www.apache.org/licenses/LICENSE-2.0
+// Description : Simple IRC bot
+//============================================================================
 
+/**
+ *  Implementation of UnixUDPService.h interface.
+ */
 #include "UnixUDPService.h"
 #include "NetworkException.h"
 #include <string>
@@ -26,17 +31,19 @@ UnixUDPService::UnixUDPService(string hostName, string port) {
     this->sockfd = -1;
     this->IPv6 = false;
     this->addr = nullptr;
+    this->res = nullptr;
 }
 
 UnixUDPService::~UnixUDPService() {
-
+    freeaddrinfo(res);
+    close(sockfd);
 }
 
 void UnixUDPService::establishClientConnection() {
     //resolve hostname to IP address
-    struct addrinfo hints, *res;
-    int status;
 
+    int status;
+    struct addrinfo hints;
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
@@ -48,20 +55,18 @@ void UnixUDPService::establishClientConnection() {
     addr = (sockaddr *) res->ai_addr;
     if((this->sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
         throw NetworkException("Error: couldn't create a socket.");
-
-    //freeaddrinfo(res);
 }
 
 void UnixUDPService::sendMsg(string msg) {
-    cout << "Sending: " << msg << endl;
-    cout << "IPv4: " << inet_ntoa( ((struct sockaddr_in *)addr)->sin_addr ) << endl;
     int err = 0;
     if((err = sendto(this->sockfd, msg.c_str(), msg.length(), 0, (struct sockaddr*) (this->addr), 18)) <= 0) {
         throw NetworkException("Error: sendto failed.");
     }
-    cout << "Odeslano " << err << "bajtu." << endl;
 }
 
+/**
+ *  Reading messages is not necessary for this kind of tasks.
+ */
 string UnixUDPService::readMsg() {
     return "";
 }

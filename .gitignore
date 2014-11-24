@@ -4,6 +4,7 @@ Release
 utils
 .cproject
 .project
+.~*
 
 # Compiled Object files
 *.slo
