@@ -35,9 +35,8 @@ UnixTCPService::UnixTCPService(const string hostName, const string port) {
 }
 
 UnixTCPService::~UnixTCPService() {
-    freeaddrinfo(res);  //If exception is thrown, these two calls have problems to finish.
-    freeaddrinfo(p);    //Better off let leak some memory than have a seg faults.
-//    freeaddrinfo(&hints);
+//    freeaddrinfo(res);  //If exception is thrown, these two calls have problems to finish.
+//    freeaddrinfo(p);    //Better off let leak some memory than have a seg faults.
     close(sockfd);
 }
 
@@ -58,11 +57,8 @@ void UnixTCPService::establishClientConnection() {
     //Original at beej.us
     for(p = res; p != NULL; p = p->ai_next) {
         if (p->ai_family == AF_INET) { // IPv4
-            struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
             break;
         } else { // IPv6
-            struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)p->ai_addr;
-            addr = &(ipv6->sin6_addr);
             IPv6 = true;
             break;
         }
@@ -71,9 +67,8 @@ void UnixTCPService::establishClientConnection() {
         throw NetworkException("Error: couldn't create a socket.");
 
     // Use connect only if TCP communication is used.
-    if(connect(sockfd, res->ai_addr, res->ai_addrlen) < 0)
+    if(connect(sockfd, p->ai_addr, p->ai_addrlen) < 0)
         throw NetworkException("Error when creating socket.");
-    freeaddrinfo(&hints);
 }
 
 string UnixTCPService::getMyIP() {
@@ -109,7 +104,6 @@ string UnixTCPService::readMsg() {
 
     string returnMsg(buf);
     return returnMsg;
-//    return "";
 }
 
 void UnixTCPService::sendMsg(string msg) {

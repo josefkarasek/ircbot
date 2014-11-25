@@ -54,8 +54,6 @@ void UnixUDPService::establishClientConnection() {
     addr = (sockaddr *) res->ai_addr;
     if((this->sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
         throw NetworkException("Error: couldn't create a socket.");
-
-    freeaddrinfo(&hints);
 }
 
 void UnixUDPService::sendMsg(string msg) {
