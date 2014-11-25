@@ -14,6 +14,7 @@
 #include <string>
 #include <ctime>
 #include <sstream>
+#include <memory>
 
 using namespace std;
 
@@ -31,8 +32,10 @@ private:
     string channel;
     string syslogHostName;
     vector<string> specialWords;
-    UnixTCPService *ircService;
-    UnixUDPService *syslogService;
+//    UnixTCPService *ircService;
+//    UnixUDPService *syslogService;
+    unique_ptr<UnixTCPService> ircService;
+    unique_ptr<UnixUDPService> syslogService;
 
     void dispatchMessage(vector<string> message);
     bool containsSpecialWord(string messageBody);

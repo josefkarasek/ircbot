@@ -11,6 +11,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <memory>
 
 using namespace std;
 
@@ -23,13 +24,16 @@ Ircbot::Ircbot(string ircHostname, string port, string channel, string syslogHos
         this->port = "6667";
     else
         this->port = port;
-    this->ircService = new UnixTCPService(ircHostName, this->port);
-    this->syslogService = new UnixUDPService(syslogHostName, "514");
+//    this->ircService = new UnixTCPService(ircHostName, this->port);
+//    this->syslogService = new UnixUDPService(syslogHostName, "514");
+
+    ircService.reset(new UnixTCPService(ircHostName, this->port));
+    syslogService.reset(new UnixUDPService(syslogHostName, "514"));
 }
 
 Ircbot::~Ircbot() {
-    delete(ircService);
-    delete(syslogService);
+//    delete(ircService);
+//    delete(syslogService);
 }
 
 /**
@@ -93,8 +97,6 @@ void Ircbot::dispatchMessage(vector<string> message) {
         vector<string>::iterator v2 = vec2.begin();
         int i = 0;
         while(v2 != vec2.end() && i < 2) {
-            cout << "Word: " << *v2 << endl;
-
             if((*v2).compare("PING") == 0) {
                 string pong = "PONG " + *(v2 + 1) + "\r\n";
                 ircService->sendMsg(pong);

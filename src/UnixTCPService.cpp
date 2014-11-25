@@ -35,8 +35,9 @@ UnixTCPService::UnixTCPService(const string hostName, const string port) {
 }
 
 UnixTCPService::~UnixTCPService() {
-//    freeaddrinfo(res);  //If exception is thrown, these two calls have problems to finish.
-//    freeaddrinfo(p);    //Better off let leak some memory than have a seg faults.
+    freeaddrinfo(res);  //If exception is thrown, these two calls have problems to finish.
+    freeaddrinfo(p);    //Better off let leak some memory than have a seg faults.
+//    freeaddrinfo(&hints);
     close(sockfd);
 }
 
@@ -72,6 +73,7 @@ void UnixTCPService::establishClientConnection() {
     // Use connect only if TCP communication is used.
     if(connect(sockfd, res->ai_addr, res->ai_addrlen) < 0)
         throw NetworkException("Error when creating socket.");
+    freeaddrinfo(&hints);
 }
 
 string UnixTCPService::getMyIP() {
@@ -96,16 +98,18 @@ string UnixTCPService::getMyIP() {
 }
 
 string UnixTCPService::readMsg() {
-    memset(&msg_buffer, 0, MSG_LEN);
+    char buf[MSG_LEN];
+    memset(&buf, 0, MSG_LEN);
 
-    int bytes_read = recv(sockfd, &msg_buffer, MSG_LEN, 0);
+    int bytes_read = recv(sockfd, &buf, MSG_LEN, 0);
     if(bytes_read == 0)
         throw NetworkException("Client closed connection.");
     if(bytes_read < 0)
         throw NetworkException("Error when receiving message.");
 
-    string returnMsg = msg_buffer;
+    string returnMsg(buf);
     return returnMsg;
+//    return "";
 }
 
 void UnixTCPService::sendMsg(string msg) {

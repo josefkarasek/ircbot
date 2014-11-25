@@ -17,7 +17,7 @@ using namespace std;
 
 class UnixUDPService : SocketNetworkService {
 public:
-    UnixUDPService(string hostName, string port);
+    UnixUDPService(const string &hostName, const string &port);
     ~UnixUDPService();
     void establishClientConnection();
     void sendMsg(string msg);
@@ -32,6 +32,7 @@ private:
     bool IPv6;
     void *addr;
     struct addrinfo *res;
+//    struct addrinfo hints;
 };
 
 #endif

@@ -15,7 +15,7 @@
 
 using namespace std;
 
-class UnixTCPService :  SocketNetworkService {
+class UnixTCPService : SocketNetworkService {
 public:
     UnixTCPService(string hostName, string port);
     ~UnixTCPService();
@@ -29,10 +29,10 @@ private:
     string port;
     int sockfd;
     static const int MSG_LEN = 1500;
-    char msg_buffer[MSG_LEN];
     bool IPv6;
     void *addr;
     struct addrinfo *res, *p;
+//    struct addrinfo hints;
 };
 
 #endif
