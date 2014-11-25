@@ -23,12 +23,6 @@
 
 using namespace std;
 
-///**
-// *  Simple IRC bot class.
-// *  Connects to a IRC server and receives messages from one channel.
-// *  Processes messages and logs PRIVATE a NOTICE messages to a SYSLOG server.
-// */
-
 /**
  *  CLI arguments are stored here.
  */
@@ -39,7 +33,6 @@ struct arguments {
     string syslogHostName;
     vector<string> specialWords;
 };
-
 
 /**
  *  Display help message.

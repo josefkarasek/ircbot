@@ -66,7 +66,6 @@ void UnixTCPService::establishClientConnection() {
     if((this->sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0)
         throw NetworkException("Error: couldn't create a socket.");
 
-    // Use connect only if TCP communication is used.
     if(connect(sockfd, p->ai_addr, p->ai_addrlen) < 0)
         throw NetworkException("Error when creating socket.");
 }

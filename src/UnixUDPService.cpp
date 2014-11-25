@@ -35,10 +35,14 @@ UnixUDPService::UnixUDPService(const string &hostName, const string &port) {
 }
 
 UnixUDPService::~UnixUDPService() {
-    freeaddrinfo(res);
+    freeaddrinfo(res);  // This is potentially dangerous when exception is thrown.
     close(sockfd);
 }
 
+/**
+ *  This is a UDP connection.
+ *  Only a socket is needed. No real establishing.
+ */
 void UnixUDPService::establishClientConnection() {
     //resolve hostname to IP address
     struct addrinfo hints;
@@ -56,6 +60,9 @@ void UnixUDPService::establishClientConnection() {
         throw NetworkException("Error: couldn't create a socket.");
 }
 
+/**
+ *  Send message msg to given socket.
+ */
 void UnixUDPService::sendMsg(string msg) {
     int err = 0;
     if((err = sendto(this->sockfd, msg.c_str(), msg.length(), 0, (struct sockaddr*) (this->addr), 18)) <= 0) {

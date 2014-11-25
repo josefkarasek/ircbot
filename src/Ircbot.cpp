@@ -24,16 +24,12 @@ Ircbot::Ircbot(string ircHostname, string port, string channel, string syslogHos
         this->port = "6667";
     else
         this->port = port;
-//    this->ircService = new UnixTCPService(ircHostName, this->port);
-//    this->syslogService = new UnixUDPService(syslogHostName, "514");
-
     ircService.reset(new UnixTCPService(ircHostName, this->port));
     syslogService.reset(new UnixUDPService(syslogHostName, "514"));
 }
 
 Ircbot::~Ircbot() {
-//    delete(ircService);
-//    delete(syslogService);
+    // Smart pointers automatically deallocate their memory.
 }
 
 /**

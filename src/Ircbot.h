@@ -18,6 +18,11 @@
 
 using namespace std;
 
+/**
+ *  Simple IRC bot class.
+ *  Connects to a IRC server and receives messages from one channel.
+ *  Processes messages and logs PRIVATE a NOTICE messages to a SYSLOG server.
+ */
 class Ircbot {
 public:
     Ircbot(string ircHostname, string port, string channel, string syslogHostName, vector<string> specialWords);
@@ -32,8 +37,6 @@ private:
     string channel;
     string syslogHostName;
     vector<string> specialWords;
-//    UnixTCPService *ircService;
-//    UnixUDPService *syslogService;
     unique_ptr<UnixTCPService> ircService;
     unique_ptr<UnixUDPService> syslogService;
 
