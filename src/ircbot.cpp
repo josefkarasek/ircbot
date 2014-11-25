@@ -96,15 +96,8 @@ int main(int argc, char ** argv) {
 
     arguments a = checkAndParseArguments(argc, argv);
 
-    cout << a.ircHostName << "  " << a.port << "  " << a.channel << "  " << a.syslogHostName << "  " << endl;
-
-    vector<string> vec = a.specialWords ;
-    vector<string>::iterator v = vec.begin();
-    while(v != vec.end()) {
-        cout << *v << endl;
-        v++;
-    }
     std::unique_ptr<Ircbot> bot(new Ircbot(a.ircHostName, a.port, a.channel, a.syslogHostName, a.specialWords));
+
     int err = bot->run();
 
     return err;
