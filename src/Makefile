@@ -1,9 +1,9 @@
 CC =g++
 CFLAGS =-g --std=c++11 -Wall -pedantic -Wextra
-FILES =ircbot.cpp UnixTCPService.cpp UnixUDPService.cpp Utils.cpp Ircbot.cpp
+FILES =main.cpp UnixTCPService.cpp UnixUDPService.cpp Utils.cpp Ircbot.cpp
 RESULT =ircbot
 LOGIN = xkaras27
-ADDITIONALS = Makefile README manual.pdf NetworkException.h ircbot.cpp SocketNetworkService.h UnixTCPService.cpp UnixTCPService.h UnixUDPService.h UnixUDPService.cpp
+ADDITIONALS = Makefile README manual.pdf NetworkException.h main.cpp SocketNetworkService.h UnixTCPService.cpp UnixTCPService.h UnixUDPService.h UnixUDPService.cpp Utils.h Utils.cpp Ircbot.cpp Ircbot.h
 
 $(RESULT): $(FILES)
 	$(CC) $(CFLAGS) $(FILES) -o $(RESULT)

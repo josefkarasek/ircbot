@@ -92,16 +92,25 @@ string UnixTCPService::getMyIP() {
 }
 
 string UnixTCPService::readMsg() {
+    int bytes_read;
+    string tempMsg, returnMsg = "";
     char buf[MSG_LEN];
     memset(&buf, 0, MSG_LEN);
 
-    int bytes_read = recv(sockfd, &buf, MSG_LEN, 0);
-    if(bytes_read == 0)
-        throw NetworkException("Client closed connection.");
-    if(bytes_read < 0)
-        throw NetworkException("Error when receiving message.");
+    while(1) {
+        bytes_read = recv(sockfd, &buf, MSG_LEN, 0);
+        tempMsg = buf;
 
-    string returnMsg(buf);
+        returnMsg += tempMsg;
+
+        if(bytes_read == 0)
+            throw NetworkException("Client closed connection.");
+        if(bytes_read < 0)
+            throw NetworkException("Error when receiving message.");
+        int position = tempMsg.find('\n');
+        if(position != -1)
+            break;
+    }
     return returnMsg;
 }
 
